@@ -5,6 +5,20 @@ import shutil
 import sys
 
 
+# Global variable to hold the name of the selected or created environment
+selected_env_name = None
+
+
+
+# Function to activate a Conda environment in the local shell
+def activate_conda_env(env_name):
+    global selected_env_name
+    selected_env_name = env_name
+    try:
+        subprocess.run(f"conda activate {env_name}", shell=True, check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Error: {e}")
+
 # Function to prompt the user to initialize Conda
 def prompt_conda_init():
     click.echo("Before proceeding, please initialize Conda by running:")
@@ -76,10 +90,13 @@ def prompt_install_or_exit():
 def activate_env_globally(env_name):
     click.echo(f"Activating environment '{env_name}' globally...")
     try:
-        subprocess.run(["conda", "activate", env_name], check=True)
+        os.environ["CONDA_DEFAULT_ENV"] = env_name
         click.echo(f"Environment '{env_name}' activated globally successfully.")
-    except subprocess.CalledProcessError as e:
+    except Exception as e:
         click.echo(f"Error: {e}")
+
+
+
 
 # Function to list all Conda environments and prompt the user to select one
 def list_and_select_env():
@@ -98,6 +115,7 @@ def list_and_select_env():
     else:
         click.echo("Invalid choice.")
 
+
 # Function to create a new Conda environment and activate it globally
 def create_and_activate_new_env():
     click.echo("Creating a new Conda environment...")
@@ -109,12 +127,13 @@ def create_and_activate_new_env():
     except subprocess.CalledProcessError as e:
         click.echo(f"Error: {e}")
 
+
 # Function to reinstall Conda
 def reinstall_conda():
     click.echo("Reinstalling Conda...")
     subprocess.run(["rm", "-rf", os.path.expanduser("~/miniconda"), os.path.expanduser("~/.conda")], check=True)
     install_conda()
-    reinit_shell()
+    activate_env_globally("base")  # Activate base environment
     raise SystemExit(0)
 
 
@@ -167,6 +186,9 @@ def main():
     else:
         prompt_install_or_exit()
 
+    # Activate base environment after installation or reinstallation
+    activate_env_globally("base")
+
     # Prompt the user to select an action
     click.echo("What would you like to do?")
     click.echo("1. Use an existing Conda environment")
@@ -189,6 +211,9 @@ def main():
         raise SystemExit(0)
     else:
         click.echo("Invalid choice.")
+
+activate_conda_env("my_environment")
+
 
 
 if __name__ == "__main__":

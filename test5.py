@@ -4,6 +4,47 @@ import click
 import shutil
 import sys
 
+# Global variable to hold the name of the selected or created environment
+selected_env_name = None
+# Function to activate Conda in the shell
+def activate_conda():
+    try:
+        os.environ["PATH"] = "~/miniconda/bin:" + os.environ["PATH"]
+        os.environ["CONDA_EXE"] = "~/miniconda/bin/conda"
+        os.environ["CONDA_PREFIX"] = "~/miniconda"
+        os.environ["CONDA_DEFAULT_ENV"] = "base"
+        os.environ["CONDA_SHLVL"] = "1"
+        os.environ["_CE_M"] = ""
+        os.environ["_CE_CONDA"] = ""
+    except Exception as e:
+        click.echo(f"Error activating Conda: {e}")
+        return False
+    return True
+
+
+
+# Activate Conda when the script is run
+if not activate_conda():
+    sys.exit(1)
+
+    # Function to manually switch between environments
+def switch_env():
+    env_name = click.prompt("Enter the name of the environment you want to switch to")
+    try:
+        activate_env_globally(env_name)
+    except Exception as e:
+        click.echo(f"Error switching to environment '{env_name}': {e}")
+        return False
+    return True
+
+# Function to activate a Conda environment in the local shell
+def activate_conda_env(env_name):
+    global selected_env_name
+    selected_env_name = env_name
+    try:
+        subprocess.run(f"conda activate {env_name}", shell=True, check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Error: {e}")
 
 # Function to prompt the user to initialize Conda
 def prompt_conda_init():
@@ -13,11 +54,9 @@ def prompt_conda_init():
     click.echo("Exiting...")
     raise SystemExit(1)
 
-
 # Function to check if Conda is initialized and return its installation directory
 def check_conda_initialized():
     return os.environ.get("CONDA_EXE")
-
 
 # Function to check if Conda is installed and return its installation directory
 def check_conda_installed():
@@ -29,7 +68,6 @@ def check_conda_installed():
         return conda_path if conda_path else None
     except subprocess.CalledProcessError:
         return None
-
 
 # Function to install Miniconda
 def install_conda():
@@ -60,7 +98,6 @@ def install_conda():
     click.echo("Installation completed successfully.")
     return os.path.expanduser("~/miniconda")
 
-
 # Function to prompt the user to install Conda or exit
 def prompt_install_or_exit():
     click.echo("Conda is not installed.")
@@ -71,14 +108,13 @@ def prompt_install_or_exit():
         click.echo("Exiting...")
         raise SystemExit(1)
 
-
 # Function to activate a Conda environment globally by name
 def activate_env_globally(env_name):
     click.echo(f"Activating environment '{env_name}' globally...")
     try:
-        subprocess.run(["conda", "activate", env_name], check=True)
+        os.environ["CONDA_DEFAULT_ENV"] = env_name
         click.echo(f"Environment '{env_name}' activated globally successfully.")
-    except subprocess.CalledProcessError as e:
+    except Exception as e:
         click.echo(f"Error: {e}")
 
 # Function to list all Conda environments and prompt the user to select one
@@ -114,9 +150,8 @@ def reinstall_conda():
     click.echo("Reinstalling Conda...")
     subprocess.run(["rm", "-rf", os.path.expanduser("~/miniconda"), os.path.expanduser("~/.conda")], check=True)
     install_conda()
-    reinit_shell()
+    activate_env_globally("base")  # Activate base environment
     raise SystemExit(0)
-
 
 # Function to uninstall Conda
 def uninstall_conda():
@@ -147,7 +182,6 @@ def uninstall_conda():
     click.echo("Exiting...")
     raise SystemExit(0)
 
-
 # Function to reinitialize the shell from the local .bashrc file
 def reinit_shell():
     click.echo("Reinitializing shell...")
@@ -167,13 +201,17 @@ def main():
     else:
         prompt_install_or_exit()
 
+    # Activate base environment after installation or reinstallation
+    activate_env_globally("base")
+
     # Prompt the user to select an action
     click.echo("What would you like to do?")
     click.echo("1. Use an existing Conda environment")
     click.echo("2. Create a new Conda environment")
     click.echo("3. Reinstall Conda")
     click.echo("4. Uninstall Conda and its dependencies")
-    click.echo("5. Exit")
+    click.echo("5. Manually switch between environments")
+    click.echo("6. Exit")
     choice = click.prompt("Enter your choice", type=int)
 
     if choice == 1:
@@ -185,6 +223,8 @@ def main():
     elif choice == 4:
         uninstall_conda()
     elif choice == 5:
+        switch_env()
+    elif choice == 6:
         click.echo("Exiting...")
         raise SystemExit(0)
     else:
