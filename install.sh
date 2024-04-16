@@ -1,13 +1,21 @@
 #!/bin/bash
 
-# Function to list the five most recently used Conda environments
+# Function to check if Conda is installed
+check_conda_installed() {
+    if ! command -v conda &> /dev/null; then
+        echo "Conda is not installed. Please install Conda first."
+        exit 1
+    fi
+}
+
+# Function to list the ten most recently used Conda environments
 list_recent_envs() {
-    echo "Five most recently used Conda environments:"
+    echo "Ten most recently used Conda environments:"
     conda info --envs | grep '^ *' | awk '{print $1}' | while read -r env_path; do
         env_name=$(basename $env_path)
         last_used=$(ls -lt $env_path/conda-meta | awk 'NR==2{print $6, $7, $8}')
         echo "Environment: $env_name | Last used: $last_used"
-    done | head -n 5
+    done | head -n 10
 }
 
 # Function to create a new Conda environment
@@ -30,6 +38,9 @@ destroy_all_envs() {
         echo "Failed to destroy all Conda environments."
     fi
 }
+
+# Check if Conda is installed
+check_conda_installed
 
 echo "What would you like to do?"
 echo "1. Use an existing Conda environment"
