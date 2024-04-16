@@ -94,22 +94,20 @@ def reinstall_conda():
     raise SystemExit(0)
 
 
+
+
 # Function to uninstall Conda
 def uninstall_conda():
     click.confirm("This action will uninstall Conda and its dependencies. Do you want to proceed?", abort=True)
     click.echo("Uninstalling Conda and its dependencies...")
 
-    # Remove the Conda executable and its associated directories
-    conda_path = "/home/trauco/anaconda3/bin/conda"
-    conda_bin_dir = os.path.dirname(conda_path)
-    if os.path.exists(conda_path):
-        shutil.rmtree(conda_bin_dir)
+    # Remove the Miniconda installation directory
+    miniconda_dir = os.path.expanduser("~/miniconda")
+    if os.path.exists(miniconda_dir):
+        shutil.rmtree(miniconda_dir)
 
     # Remove the user-specific configuration directory
     shutil.rmtree(os.path.expanduser("~/.conda"), ignore_errors=True)
-
-    # Remove any environment directories
-    shutil.rmtree(os.path.expanduser("~/miniconda/envs"), ignore_errors=True)
 
     # Remove any Conda-related initialization scripts from .bashrc or .bash_profile
     bash_files = ["~/.bashrc", "~/.bash_profile"]
@@ -122,6 +120,7 @@ def uninstall_conda():
                 subprocess.run(["sed", "-i", "/# >>> conda initialize >>>/,/# <<< conda initialize <<</d", full_path], check=True)
 
     click.echo("Uninstallation completed successfully.")
+    reinit_shell()
     click.echo("Exiting...")
     raise SystemExit(0)
 
